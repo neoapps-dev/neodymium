@@ -7,7 +7,7 @@ BUILD = build
 SRC = src
 KERNEL = neodymium.bin
 ISO = neodymium.iso
-OBJS = $(BUILD)/boot/boot.o $(BUILD)/drivers/vga.o $(BUILD)/drivers/serial.o $(BUILD)/drivers/ps2.o $(BUILD)/kernel/kernel.o $(BUILD)/kernel/idt.o $(BUILD)/kernel/isr.o $(BUILD)/kernel/printf.o
+OBJS = $(BUILD)/boot/boot.o $(BUILD)/drivers/vga.o $(BUILD)/drivers/serial.o $(BUILD)/drivers/ps2.o $(BUILD)/kernel/kernel.o $(BUILD)/kernel/idt.o $(BUILD)/kernel/isr.o $(BUILD)/kernel/printf.o $(BUILD)/kernel/gdt.o
 .PHONY: all clean iso run
 all: $(BUILD)/$(KERNEL)
 $(BUILD)/$(KERNEL): $(OBJS) linker.ld
@@ -43,7 +43,7 @@ run: $(BUILD)/$(KERNEL)
 	qemu-system-x86_64 -kernel $(BUILD)/$(KERNEL) -serial stdio
 
 run-iso: iso
-	qemu-system-x86_64 -cdrom $(BUILD)/$(ISO)
+	qemu-system-x86_64 -cdrom $(BUILD)/$(ISO) -serial stdio
 
 clean:
 	rm -rf $(BUILD)

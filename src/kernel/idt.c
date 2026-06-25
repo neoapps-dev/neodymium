@@ -1,4 +1,5 @@
 #include "idt.h"
+#include "gdt.h"
 #include "asm/cpu.h"
 #include "asm/io.h"
 static struct idt_entry idt[256];
@@ -26,8 +27,18 @@ static void pic_remap(void) {
     outb(0xA1, 0xFF);
 }
 
+static volatile unsigned int tick;
+static void timer_handler(struct regs *r) {
+    (void)r;
+    tick++;
+}
+
+unsigned int get_tick(void) {
+    return tick;
+}
+
 static void pit_init(void) {
-    unsigned short divisor = 4773; //neo: 250 hertz
+    unsigned short divisor = 4773;
     outb(0x43, 0x36);
     outb(0x40, divisor & 0xFF);
     outb(0x40, divisor >> 8);
@@ -49,6 +60,7 @@ void isr_handler(struct regs *r) {
 }
 
 void idt_init(void) {
+    gdt_init();
     struct idtr idtr;
     idtr.limit = sizeof(idt) - 1;
     idtr.base = (unsigned int)&idt;
@@ -57,5 +69,6 @@ void idt_init(void) {
 
     pic_remap();
     pit_init();
+    irq_install_handler(0, timer_handler);
     lidt(&idtr);
 }

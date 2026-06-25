@@ -10,6 +10,7 @@ void kernel_main(void) {
     vga_setcolor(vga_entry_color(VGA_RED, VGA_BLACK));
     printf("neodymium\n");
     printf("type something:\n");
+    vga_setcolor(vga_entry_color(VGA_WHITE, VGA_BLACK));
     sti();
     while (1) {
         int c = ps2_getchar();

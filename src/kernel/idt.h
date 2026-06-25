@@ -18,4 +18,5 @@ struct regs {
 
 void idt_init(void);
 void irq_install_handler(int irq, void (*handler)(struct regs *));
+unsigned int get_tick(void);
 #endif
