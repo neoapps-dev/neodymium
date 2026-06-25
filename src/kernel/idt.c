@@ -2,6 +2,7 @@
 #include "asm/cpu.h"
 #include "asm/io.h"
 static struct idt_entry idt[256];
+static void (*irq_handlers[16])(struct regs *);
 extern unsigned int isr_stub_table[];
 static void idt_set(int num, void *base, unsigned short sel, unsigned char flags) {
     unsigned int b = (unsigned int)base;
@@ -32,8 +33,15 @@ static void pit_init(void) {
     outb(0x40, divisor >> 8);
 }
 
+void irq_install_handler(int irq, void (*handler)(struct regs *)) {
+    irq_handlers[irq] = handler;
+}
+
 void isr_handler(struct regs *r) {
     if (r->int_no >= 32 && r->int_no <= 47) {
+        int irq = r->int_no - 32;
+        if (irq_handlers[irq])
+            irq_handlers[irq](r);
         if (r->int_no >= 40)
             outb(0xA0, 0x20);
         outb(0x20, 0x20);

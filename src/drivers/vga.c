@@ -1,10 +1,18 @@
 #include "vga.h"
+#include "../kernel/asm/io.h"
 static const unsigned int VGA_WIDTH  = 80;
 static const unsigned int VGA_HEIGHT = 25;
 static unsigned short *vga_buffer;
 static unsigned int vga_row;
 static unsigned int vga_column;
 static unsigned char vga_color;
+static void vga_update_cursor(void) {
+    unsigned short pos = vga_row * VGA_WIDTH + vga_column;
+    outb(0x3D4, 0x0E);
+    outb(0x3D5, pos >> 8);
+    outb(0x3D4, 0x0F);
+    outb(0x3D5, pos & 0xFF);
+}
 void vga_init(void) {
     vga_buffer = (unsigned short *) 0xB8000;
     vga_row    = 0;
@@ -28,6 +36,11 @@ void vga_putchar(char c) {
         vga_row++;
     } else if (c == '\r') {
         vga_column = 0;
+    } else if (c == '\b') {
+        if (vga_column > 0) vga_column--;
+        else if (vga_row > 0) { vga_row--; vga_column = VGA_WIDTH - 1; }
+        const unsigned int index = vga_row * VGA_WIDTH + vga_column;
+        vga_buffer[index] = vga_entry(' ', vga_color);
     } else if (c == '\t') {
         vga_column = (vga_column + 4) & ~3;
     } else {
@@ -55,6 +68,29 @@ void vga_putchar(char c) {
         }
         vga_row = VGA_HEIGHT - 1;
     }
+    vga_update_cursor();
+}
+
+void vga_cursor_up(void) {
+    if (vga_row > 0) vga_row--;
+    vga_update_cursor();
+}
+
+void vga_cursor_down(void) {
+    if (vga_row < VGA_HEIGHT - 1) vga_row++;
+    vga_update_cursor();
+}
+
+void vga_cursor_left(void) {
+    if (vga_column > 0) vga_column--;
+    else if (vga_row > 0) { vga_row--; vga_column = VGA_WIDTH - 1; }
+    vga_update_cursor();
+}
+
+void vga_cursor_right(void) {
+    if (vga_column < VGA_WIDTH - 1) vga_column++;
+    else if (vga_row < VGA_HEIGHT - 1) { vga_row++; vga_column = 0; }
+    vga_update_cursor();
 }
 
 void vga_write(const char *data) {

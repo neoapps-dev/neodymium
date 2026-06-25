@@ -31,4 +31,8 @@ void vga_init(void);
 void vga_putchar(char c);
 void vga_write(const char *data);
 void vga_setcolor(unsigned char color);
+void vga_cursor_up(void);
+void vga_cursor_down(void);
+void vga_cursor_left(void);
+void vga_cursor_right(void);
 #endif

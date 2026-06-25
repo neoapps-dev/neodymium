@@ -17,4 +17,5 @@ struct regs {
 };
 
 void idt_init(void);
+void irq_install_handler(int irq, void (*handler)(struct regs *));
 #endif
