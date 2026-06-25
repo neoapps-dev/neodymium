@@ -1,3 +1,4 @@
+#include "../kernel/asm/boot.h"
 __attribute__((section(".multiboot")))
 struct {
     unsigned int magic;
@@ -15,13 +16,5 @@ __attribute__((section(".text")))
 __attribute__((naked))
 __attribute__((noreturn))
 void _start(void) {
-    __asm__ volatile (
-        "movl %0, %%esp\n"
-        "call kernel_main\n"
-        "1: hlt\n"
-        "jmp 1b\n"
-        :
-        : "r" (_stack_top)
-        : "memory"
-    );
+    boot_jump(_stack_top, kernel_main);
 }

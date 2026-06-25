@@ -1,15 +1,6 @@
 #include "serial.h"
+#include "../kernel/asm/io.h"
 static const unsigned short COM1 = 0x3F8;
-static void outb(unsigned short port, unsigned char val) {
-    __asm__ volatile("outb %0, %1" : : "a"(val), "Nd"(port));
-}
-
-static unsigned char inb(unsigned short port) {
-    unsigned char val;
-    __asm__ volatile("inb %1, %0" : "=a"(val) : "Nd"(port));
-    return val;
-}
-
 void serial_init(void) {
     outb(COM1 + 3, 0x80);
     outb(COM1 + 0, 0x01);
