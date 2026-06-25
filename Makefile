@@ -7,7 +7,7 @@ BUILD = build
 SRC = src
 KERNEL = neodymium.bin
 ISO = neodymium.iso
-OBJS = $(BUILD)/boot/boot.o $(BUILD)/drivers/vga.o $(BUILD)/kernel/kernel.o
+OBJS = $(BUILD)/boot/boot.o $(BUILD)/drivers/vga.o $(BUILD)/drivers/serial.o $(BUILD)/kernel/kernel.o
 .PHONY: all clean iso run
 all: $(BUILD)/$(KERNEL)
 $(BUILD)/$(KERNEL): $(OBJS) linker.ld
