@@ -25,4 +25,6 @@
 void ps2_init(void);
 int ps2_getchar(void);
 int ps2_poll(void);
+int ps2_is_ctrl(void);
+int ps2_is_shift(void);
 #endif

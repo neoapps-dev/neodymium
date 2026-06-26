@@ -1,10 +1,10 @@
 #include "printf.h"
 #include <stdarg.h>
 #include "../drivers/serial.h"
-#include "../drivers/vga.h"
+#include "../drivers/fbcon.h"
 static void putchar(char c) {
     serial_putchar(c);
-    vga_putchar(c);
+    fbcon_putchar(c);
 }
 
 void printf(const char *fmt, ...) {

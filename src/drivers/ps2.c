@@ -124,3 +124,6 @@ int ps2_poll(void) {
     }
     return -1;
 }
+
+int ps2_is_ctrl(void) { return ctrl_pressed; }
+int ps2_is_shift(void) { return shift_pressed; }

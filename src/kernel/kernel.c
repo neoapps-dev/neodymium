@@ -18,6 +18,7 @@ void kernel_main(void) {
     idt_init();
     pmm_init(mboot_info);
     ps2_init();
+    fbcon_init();
     vga_setcolor(vga_entry_color(VGA_WHITE, VGA_BLACK));
     printf("//neodymium [%s]\n\n", MAKE_COMMIT_HASH);
     unsigned int free_pages = pmm_get_free_page_count();
@@ -55,7 +56,9 @@ void kernel_main(void) {
     }
     free(b);
     free(c);
-    if (fb_init(mboot_info) == 0) {
+    int fb_ok = fb_init(mboot_info) == 0;
+    if (fb_ok) {
+        fbcon_resize();
         unsigned int bg = fb_rgb(0, 0, 0);
         unsigned int w = fb_get_width();
         unsigned int h = fb_get_height();
@@ -94,16 +97,23 @@ void kernel_main(void) {
     sti();
     printf("[ps/2] type something:\n\n\n");
     while (1) {
-        int c = ps2_getchar();
-        if (c == '\b')
-            printf("\b \b");
-        else if (c >= KEY_F1 && c <= KEY_F12)
-            printf("[F%d]", c - KEY_F1 + 1);
-        else if (c == KEY_UP) vga_cursor_up();
-        else if (c == KEY_DOWN) vga_cursor_down();
-        else if (c == KEY_LEFT) vga_cursor_left();
-        else if (c == KEY_RIGHT) vga_cursor_right();
-        else if (c < 256)
-            printf("%c", c);
+        int c = ps2_poll();
+        if (c >= 0) {
+            if (c == '\b')
+                printf("\b \b");
+            else if (c == KEY_F12 && ps2_is_ctrl() && ps2_is_shift() && fb_ok) {
+                if (fbcon_get_visible()) fbcon_set_visible(0); else fbcon_set_visible(1);
+                fb_clear(fb_rgb(0, 0, 0));
+                if (fbcon_get_visible()) fbcon_redraw();
+            } else if (c >= KEY_F1 && c <= KEY_F12) printf("[F%d]", c - KEY_F1 + 1);
+            else if (c == KEY_UP) vga_cursor_up();
+            else if (c == KEY_DOWN) vga_cursor_down();
+            else if (c == KEY_LEFT) vga_cursor_left();
+            else if (c == KEY_RIGHT) vga_cursor_right();
+            else if (c < 256)
+                printf("%c", c);
+        }
+        if (fb_ok) fbcon_tick();
+        hlt();
     }
 }

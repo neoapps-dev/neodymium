@@ -275,3 +275,10 @@ unsigned int fb_get_width(void) { return fb_width; }
 unsigned int fb_get_height(void) { return fb_height; }
 unsigned int fb_get_bpp(void) { return fb_bpp; }
 int fb_is_enabled(void) { return fb_enabled; }
+void fb_enable(void) {
+    vbe_write(VBE_XRES, fb_width);
+    vbe_write(VBE_YRES, fb_height);
+    vbe_write(VBE_BPP, fb_bpp);
+    vbe_write(VBE_ENABLE, VBE_ENABLED | VBE_LFB_ENABLED);
+    fb_enabled = 1;
+}
