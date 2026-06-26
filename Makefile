@@ -52,7 +52,7 @@ iso: $(BUILD)/$(KERNEL)
 	echo 'insmod vbe'                        >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'insmod vga'                        >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'menuentry "neodymium" {'           >> $(BUILD)/iso/boot/grub/grub.cfg
-	echo '  multiboot /boot/neodymium.bin'   >> $(BUILD)/iso/boot/grub/grub.cfg
+	echo '  multiboot2 /boot/neodymium.bin'   >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo '}'                                 >> $(BUILD)/iso/boot/grub/grub.cfg
 	grub-mkrescue -o $(BUILD)/$(ISO) $(BUILD)/iso
 

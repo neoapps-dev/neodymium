@@ -1,27 +1,38 @@
 #ifndef MULTIBOOT_H
 #define MULTIBOOT_H
-#define MULTIBOOT_MAGIC 0x1BADB002
-#define MULTIBOOT_FLAGS 0x00000003
-#define MULTIBOOT_CHECKSUM -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS)
-#define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
+#define MULTIBOOT2_MAGIC 0xE85250D6
+#define MULTIBOOT2_ARCH_X86 0
+#define MULTIBOOT2_BOOTLOADER_MAGIC 0x36D76289
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
-struct multiboot_aout_symbol_table {
-    uint32_t tabsize;
-    uint32_t strsize;
-    uint32_t addr;
+typedef signed int int32_t;
+struct mb2_info {
+    uint32_t total_size;
     uint32_t reserved;
 };
-
-struct multiboot_elf_section_header_table {
-    uint32_t num;
+struct mb2_tag {
+    uint32_t type;
     uint32_t size;
-    uint32_t addr;
-    uint32_t shndx;
 };
-
+struct mb2_tag_mmap {
+    uint32_t type;
+    uint32_t size;
+    uint32_t entry_size;
+    uint32_t entry_version;
+};
+struct mb2_tag_fb {
+    uint32_t type;
+    uint32_t size;
+    uint64_t fb_addr;
+    uint32_t fb_pitch;
+    uint32_t fb_width;
+    uint32_t fb_height;
+    uint8_t fb_bpp;
+    uint8_t fb_type;
+    uint8_t reserved;
+};
 struct multiboot_info {
     uint32_t flags;
     uint32_t mem_lower;
@@ -31,8 +42,18 @@ struct multiboot_info {
     uint32_t mods_count;
     uint32_t mods_addr;
     union {
-        struct multiboot_aout_symbol_table aout_sym;
-        struct multiboot_elf_section_header_table elf_sec;
+        struct {
+            uint32_t tabsize;
+            uint32_t strsize;
+            uint32_t addr;
+            uint32_t reserved;
+        } aout_sym;
+        struct {
+            uint32_t num;
+            uint32_t size;
+            uint32_t addr;
+            uint32_t shndx;
+        } elf_sec;
     } u;
     uint32_t mmap_length;
     uint32_t mmap_addr;
@@ -54,14 +75,14 @@ struct multiboot_info {
     uint8_t framebuffer_bpp;
     uint8_t framebuffer_type;
     uint8_t framebuffer_color_info[6];
+    uint32_t mmap_entry_size;
 } __attribute__((packed));
-
 struct multiboot_mmap_entry {
-    unsigned int size;
-    unsigned int addr_low;
-    unsigned int addr_high;
-    unsigned int len_low;
-    unsigned int len_high;
-    unsigned int type;
+    uint32_t addr_low;
+    uint32_t addr_high;
+    uint32_t len_low;
+    uint32_t len_high;
+    uint32_t type;
+    uint32_t reserved;
 } __attribute__((packed));
 #endif

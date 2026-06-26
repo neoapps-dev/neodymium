@@ -43,7 +43,7 @@ void pmm_init(struct multiboot_info *mbd) {
                     }
                 }
             }
-            mmap = (struct multiboot_mmap_entry *)((unsigned int)mmap + mmap->size + 4);
+            mmap = (struct multiboot_mmap_entry *)((unsigned int)mmap + mbd->mmap_entry_size);
         }
     }
 }

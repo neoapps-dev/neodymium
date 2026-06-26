@@ -3,8 +3,8 @@ SECTIONS
 {
     . = 1M;
     _kernel_start = .;
-    .multiboot : {
-        *(.multiboot)
+    .multiboot2 : {
+        *(.multiboot2)
     }
 
     .text : {
