@@ -32,7 +32,7 @@ $(BUILD)/kernel/%.o: $(SRC)/kernel/%.S
 iso: $(BUILD)/$(KERNEL)
 	mkdir -p $(BUILD)/iso/boot/grub
 	cp $(BUILD)/$(KERNEL) $(BUILD)/iso/boot/
-	echo 'set timeout=0'                      > $(BUILD)/iso/boot/grub/grub.cfg
+	echo 'set timeout=10'                      > $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'set default=0'                     >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'menuentry "neodymium" {'           >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo '  multiboot /boot/neodymium.bin'   >> $(BUILD)/iso/boot/grub/grub.cfg
