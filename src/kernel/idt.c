@@ -1,9 +1,11 @@
 #include "idt.h"
 #include "gdt.h"
+#include "printf.h"
 #include "asm/cpu.h"
 #include "asm/io.h"
 static struct idt_entry idt[256];
 static void (*irq_handlers[16])(struct regs *);
+static void (*exception_handlers[32])(struct regs *);
 extern unsigned int isr_stub_table[];
 static void idt_set(int num, void *base, unsigned short sel, unsigned char flags) {
     unsigned int b = (unsigned int)base;
@@ -48,8 +50,21 @@ void irq_install_handler(int irq, void (*handler)(struct regs *)) {
     irq_handlers[irq] = handler;
 }
 
+void exception_install_handler(int num, void (*handler)(struct regs *)) {
+    if (num >= 0 && num < 32)
+        exception_handlers[num] = handler;
+}
+
+static void default_exception_handler(struct regs *r) {
+    printf("EXCEPTION: %u at 0x%x, err=%u\n", r->int_no, r->eip, r->err_code);
+    for (;;) hlt();
+}
+
 void isr_handler(struct regs *r) {
-    if (r->int_no >= 32 && r->int_no <= 47) {
+    if (r->int_no < 32) {
+        if (exception_handlers[r->int_no])
+            exception_handlers[r->int_no](r);
+    } else if (r->int_no >= 32 && r->int_no <= 47) {
         int irq = r->int_no - 32;
         if (irq_handlers[irq])
             irq_handlers[irq](r);
@@ -66,6 +81,9 @@ void idt_init(void) {
     idtr.base = (unsigned int)&idt;
     for (int i = 0; i < 256; i++)
         idt_set(i, (void *)isr_stub_table[i], GDT_CODE_SEG, 0x8E);
+
+    for (int i = 0; i < 32; i++)
+        exception_handlers[i] = default_exception_handler;
 
     pic_remap();
     pit_init();

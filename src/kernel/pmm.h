@@ -9,4 +9,5 @@ void pmm_free_page(void *addr);
 void *pmm_alloc_pages(unsigned int count);
 void pmm_free_pages(void *addr, unsigned int count);
 unsigned int pmm_get_free_page_count(void);
+unsigned int pmm_get_total_page_count(void);
 #endif

@@ -105,3 +105,7 @@ void pmm_free_pages(void *addr, unsigned int count) {
 unsigned int pmm_get_free_page_count(void) {
     return free_count;
 }
+
+unsigned int pmm_get_total_page_count(void) {
+    return total_pages;
+}

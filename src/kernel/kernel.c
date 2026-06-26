@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "idt.h"
 #include "pmm.h"
+#include "vmm.h"
 #include "../drivers/ps2.h"
 #include "asm/cpu.h"
 extern struct multiboot_info *mboot_info;
@@ -17,6 +18,16 @@ void kernel_main(void) {
     void *page = pmm_alloc_page();
     if (page) printf("[pmm] allocated page at 0x%x\n", (unsigned int)page);
     pmm_free_page(page);
+    vmm_init();
+    void *vpage = vmm_alloc_page((void *)0xE0000000, VMM_WRITABLE);
+    if (vpage) {
+        *(unsigned int *)0xE0000000 = 0xDEADBEEF;
+        printf("[vmm] 0xE0000000 = 0x%x\n", *(unsigned int *)0xE0000000);
+        printf("[vmm] phys = 0x%x\n", (unsigned int)vmm_get_phys((void *)0xE0000000));
+        vmm_unmap_page((void *)0xE0000000);
+        pmm_free_page(vpage);
+    }
+
     sti();
     printf("[ps/2] type something:\n\n\n");
     while (1) {
