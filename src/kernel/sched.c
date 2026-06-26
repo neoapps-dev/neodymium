@@ -1,6 +1,8 @@
 #include "sched.h"
+#include "gdt.h"
 #include "heap.h"
 #include "pmm.h"
+#include "vmm.h"
 #include "printf.h"
 #include "asm/cpu.h"
 #include "asm/io.h"
@@ -8,6 +10,7 @@
 extern void restore_context(struct regs *r);
 struct task {
     struct regs *stack;
+    unsigned int stack_top;
     struct task *next;
 };
 
@@ -29,16 +32,26 @@ int task_create(void (*entry)(void)) {
         return -1;
     }
 
+    unsigned char *user_stack = vmm_alloc_page((void *)0xB0000000, VMM_USER | VMM_WRITABLE);
+    if (!user_stack) {
+        free(stack);
+        free(t);
+        return -1;
+    }
+    for (unsigned int i = 0; i < PAGE_SIZE / 4; i++) ((unsigned int *)0xB0000000)[i] = 0;
     struct regs *r = (struct regs *)(stack + STACK_SIZE - sizeof(struct regs));
     for (unsigned int i = 0; i < sizeof(struct regs) / 4; i++) ((unsigned int *)r)[i] = 0;
-    r->gs = GDT_DATA_SEG;
-    r->fs = GDT_DATA_SEG;
-    r->es = GDT_DATA_SEG;
-    r->ds = GDT_DATA_SEG;
+    r->gs = GDT_USER_DATA_SEG | 3;
+    r->fs = GDT_USER_DATA_SEG | 3;
+    r->es = GDT_USER_DATA_SEG | 3;
+    r->ds = GDT_USER_DATA_SEG | 3;
     r->eip = (unsigned int)entry;
-    r->cs = GDT_CODE_SEG;
+    r->cs = GDT_USER_CODE_SEG | 3;
     r->eflags = 0x202;
+    r->user_esp = 0xB0001000;
+    r->user_ss = GDT_USER_DATA_SEG | 3;
     t->stack = r;
+    t->stack_top = (unsigned int)stack + STACK_SIZE;
     if (!task_list) {
         task_list = t;
         t->next = t;
@@ -47,6 +60,38 @@ int task_create(void (*entry)(void)) {
         task_list->next = t;
     }
 
+    return 0;
+}
+
+int task_create_elf(unsigned int entry, unsigned int user_esp) {
+    struct task *t = malloc(sizeof(struct task));
+    if (!t) return -1;
+    unsigned char *stack = malloc(STACK_SIZE);
+    if (!stack) {
+        free(t);
+        return -1;
+    }
+
+    struct regs *r = (struct regs *)(stack + STACK_SIZE - sizeof(struct regs));
+    for (unsigned int i = 0; i < sizeof(struct regs) / 4; i++) ((unsigned int *)r)[i] = 0;
+    r->gs = GDT_USER_DATA_SEG | 3;
+    r->fs = GDT_USER_DATA_SEG | 3;
+    r->es = GDT_USER_DATA_SEG | 3;
+    r->ds = GDT_USER_DATA_SEG | 3;
+    r->eip = entry;
+    r->cs = GDT_USER_CODE_SEG | 3;
+    r->eflags = 0x202;
+    r->user_esp = user_esp;
+    r->user_ss = GDT_USER_DATA_SEG | 3;
+    t->stack = r;
+    t->stack_top = (unsigned int)stack + STACK_SIZE;
+    if (!task_list) {
+        task_list = t;
+        t->next = t;
+    } else {
+        t->next = task_list->next;
+        task_list->next = t;
+    }
     return 0;
 }
 
@@ -65,6 +110,7 @@ void sched_tick(struct regs *r) {
 
     current_task->stack = r;
     current_task = current_task->next;
+    tss_set_esp0(current_task->stack_top);
     outb(0x20, 0x20);
     restore_context(current_task->stack);
 }

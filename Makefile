@@ -7,13 +7,26 @@ BUILD = build
 SRC = src
 KERNEL = neodymium.bin
 ISO = neodymium.iso
-SRCS_C := $(shell find src -name '*.c')
-SRCS_S := $(shell find src -name '*.S')
+SRCS_C := $(shell find src -path src/programs -prune -o -name '*.c' -print)
+SRCS_S := $(shell find src -path src/programs -prune -o -name '*.S' -print)
 OBJS   := $(patsubst src/%.c,$(BUILD)/%.o,$(SRCS_C)) $(patsubst src/%.S,$(BUILD)/%.o,$(SRCS_S))
-.PHONY: all clean iso run
+OBJS += $(BUILD)/kernel/hello_elf.o
 all: $(BUILD)/$(KERNEL)
+.PHONY: all clean iso run
 $(BUILD)/$(KERNEL): $(OBJS) linker.ld
 	$(LD) $(LDFLAGS) -T linker.ld -o $@ $(OBJS)
+
+LD2 = ld
+$(BUILD)/programs/%.o: src/programs/%.S
+	@mkdir -p $(@D)
+	$(AS) -m32 -c -o $@ $<
+$(BUILD)/programs/%: $(BUILD)/programs/%.o
+	$(LD2) -m elf_i386 -nostdlib -static -Ttext 0x08048000 -o $@ $<
+$(BUILD)/kernel/hello.elf: $(BUILD)/programs/hello
+	@mkdir -p $(@D)
+	cp $< $@
+$(BUILD)/kernel/hello_elf.o: $(BUILD)/kernel/hello.elf
+	$(LD2) -r -b binary -m elf_i386 -o $@ $<
 
 $(BUILD)/boot/%.o: $(SRC)/boot/%.c
 	@mkdir -p $(@D)

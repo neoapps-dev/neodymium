@@ -38,8 +38,8 @@ void vmm_init(void) {
             printf("[vmm] failed to allocate PT for idx %u\n", pd_idx);
             for (;;) hlt();
         }
-        for (unsigned int j = 0; j < 1024 && (i + j) < total_p; j++) pt[j] = ((i + j) * PAGE_SIZE) | VMM_PRESENT | VMM_WRITABLE;
-        page_directory[pd_idx] = ((unsigned int)pt) | VMM_PRESENT | VMM_WRITABLE;
+        for (unsigned int j = 0; j < 1024 && (i + j) < total_p; j++) pt[j] = ((i + j) * PAGE_SIZE) | VMM_PRESENT | VMM_WRITABLE | VMM_USER;
+        page_directory[pd_idx] = ((unsigned int)pt) | VMM_PRESENT | VMM_WRITABLE | VMM_USER;
     }
 
     exception_install_handler(14, page_fault_handler);
@@ -56,7 +56,7 @@ void vmm_map_page(void *virt, void *phys, unsigned int flags) {
         if (!pt) return;
         for (unsigned int j = 0; j < 1024; j++)
             pt[j] = 0;
-        page_directory[pd_idx] = ((unsigned int)pt) | VMM_PRESENT | VMM_WRITABLE;
+        page_directory[pd_idx] = ((unsigned int)pt) | VMM_PRESENT | VMM_WRITABLE | (flags & VMM_USER);
     }
 
     unsigned int *pt = (unsigned int *)(page_directory[pd_idx] & 0xFFFFF000);

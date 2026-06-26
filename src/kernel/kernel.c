@@ -4,14 +4,15 @@
 #include "vmm.h"
 #include "heap.h"
 #include "sched.h"
+#include "syscall.h"
+#include "elf.h"
 #include "../boot/multiboot.h"
 #include "../drivers/ps2.h"
 extern struct multiboot_info *mboot_info;
 #include "../drivers/framebuffer.h"
 #include "asm/cpu.h"
-//static void task_a(void) { while (1) printf("A"); }
-//static void task_b(void) { while (1) printf("B"); }
-//static void task_c(void) { while (1) printf("C"); }
+extern char _binary_build_kernel_hello_elf_start[];
+extern char _binary_build_kernel_hello_elf_end[];
 void kernel_main(void) {
     vga_init();
     serial_init();
@@ -88,12 +89,18 @@ void kernel_main(void) {
         printf("[fb] initialised\n");
     }
 
-    //sched_init();
-    //task_create(task_a);
-    //task_create(task_b);
-    //task_create(task_c);
-    //irq_install_handler(0, sched_tick);
-    //printf("[sched] 3 tasks running (A, B, C)\n\n");
+    sched_init();
+    unsigned int elf_entry, elf_stack;
+    unsigned int elf_len = _binary_build_kernel_hello_elf_end - _binary_build_kernel_hello_elf_start;
+    printf("[elf] loading %u bytes\n", elf_len);
+    if (elf_load(_binary_build_kernel_hello_elf_start, &elf_entry, &elf_stack) == 0) {
+        printf("[elf] entry=0x%x stack=0x%x\n", elf_entry, elf_stack);
+        task_create_elf(elf_entry, elf_stack);
+        printf("[sched] ELF task running\n\n");
+    } else {
+        printf("[elf] failed to load\n");
+    }
+    irq_install_handler(0, sched_tick);
     sti();
     printf("[ps/2] type something:\n\n\n");
     while (1) {

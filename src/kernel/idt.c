@@ -1,5 +1,6 @@
 #include "idt.h"
 #include "gdt.h"
+#include "syscall.h"
 #include "printf.h"
 #include "asm/cpu.h"
 #include "asm/io.h"
@@ -61,6 +62,10 @@ static void default_exception_handler(struct regs *r) {
 }
 
 void isr_handler(struct regs *r) {
+    if (r->int_no == 0x80) {
+        syscall_handler(r);
+        return;
+    }
     if (r->int_no < 32) {
         if (exception_handlers[r->int_no])
             exception_handlers[r->int_no](r);
@@ -88,5 +93,6 @@ void idt_init(void) {
     pic_remap();
     pit_init();
     irq_install_handler(0, timer_handler);
+    idt_set(0x80, (void *)isr_stub_table[0x80], GDT_CODE_SEG, 0xEE);
     lidt(&idtr);
 }

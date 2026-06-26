@@ -2,6 +2,9 @@
 #define IDT_H
 #define GDT_CODE_SEG 0x08
 #define GDT_DATA_SEG 0x10
+#define GDT_USER_CODE_SEG 0x18
+#define GDT_USER_DATA_SEG 0x20
+#define GDT_TSS_SEG 0x28
 struct idt_entry {
     unsigned short base_lo;
     unsigned short sel;
@@ -14,6 +17,7 @@ struct regs {
     unsigned int edi, esi, ebp, esp, ebx, edx, ecx, eax;
     unsigned int int_no, err_code;
     unsigned int eip, cs, eflags;
+    unsigned int user_esp, user_ss;
 };
 
 void idt_init(void);
