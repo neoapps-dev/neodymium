@@ -11,8 +11,11 @@
 extern struct multiboot_info *mboot_info;
 #include "../drivers/framebuffer.h"
 #include "asm/cpu.h"
-extern char _binary_build_kernel_hello_elf_start[];
-extern char _binary_build_kernel_hello_elf_end[];
+#include "cmos.h"
+extern unsigned int module_start;
+extern unsigned int module_end;
+extern unsigned int module2_start;
+extern unsigned int module2_count;
 void kernel_main(void) {
     vga_init();
     serial_init();
@@ -91,14 +94,25 @@ void kernel_main(void) {
 
     sched_init();
     unsigned int elf_entry, elf_stack;
-    unsigned int elf_len = _binary_build_kernel_hello_elf_end - _binary_build_kernel_hello_elf_start;
-    printf("[elf] loading %u bytes\n", elf_len);
-    if (elf_load(_binary_build_kernel_hello_elf_start, &elf_entry, &elf_stack) == 0) {
+    unsigned int elf_len = module_end - module_start;
+    printf("[elf] loading %u bytes from module\n", elf_len);
+    if (module_start && elf_len && elf_load((void *)module_start, &elf_entry, &elf_stack) == 0) {
         printf("[elf] entry=0x%x stack=0x%x\n", elf_entry, elf_stack);
         task_create_elf(elf_entry, elf_stack);
         printf("[sched] ELF task running\n\n");
+        if (module2_count > 1) {
+            void *modptr = vmm_alloc_page((void *)0xE0001000, VMM_USER);
+            if (modptr) {
+                *(unsigned int *)0xE0001000 = module2_start;
+                printf("[elf] module2 at 0x%x -> 0xE0001000\n", module2_start);
+            }
+        }
     } else {
-        printf("[elf] failed to load\n");
+        printf("[elf] no module, falling back to demo tasks\n");
+        printf("[cmos] %04u-%02u-%02u %02u:%02u:%02u\n",
+               cmos_get_century() * 100 + cmos_get_year(),
+               cmos_get_month(), cmos_get_day(),
+               cmos_get_hour(), cmos_get_minute(), cmos_get_second());
     }
     irq_install_handler(0, sched_tick);
     sti();

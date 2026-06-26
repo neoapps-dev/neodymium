@@ -30,14 +30,8 @@ static void pic_remap(void) {
     outb(0xA1, 0xFF);
 }
 
-static volatile unsigned int tick;
 static void timer_handler(struct regs *r) {
     (void)r;
-    tick++;
-}
-
-unsigned int get_tick(void) {
-    return tick;
 }
 
 static void pit_init(void) {

@@ -10,7 +10,6 @@ ISO = neodymium.iso
 SRCS_C := $(shell find src -path src/programs -prune -o -name '*.c' -print)
 SRCS_S := $(shell find src -path src/programs -prune -o -name '*.S' -print)
 OBJS   := $(patsubst src/%.c,$(BUILD)/%.o,$(SRCS_C)) $(patsubst src/%.S,$(BUILD)/%.o,$(SRCS_S))
-OBJS += $(BUILD)/kernel/hello_elf.o
 all: $(BUILD)/$(KERNEL)
 .PHONY: all clean iso run
 $(BUILD)/$(KERNEL): $(OBJS) linker.ld
@@ -21,12 +20,11 @@ $(BUILD)/programs/%.o: src/programs/%.S
 	@mkdir -p $(@D)
 	$(AS) -m32 -c -o $@ $<
 $(BUILD)/programs/%: $(BUILD)/programs/%.o
-	$(LD2) -m elf_i386 -nostdlib -static -Ttext 0x08048000 -o $@ $<
-$(BUILD)/kernel/hello.elf: $(BUILD)/programs/hello
-	@mkdir -p $(@D)
+	$(LD2) -m elf_i386 -nostdlib -static -T program.ld -o $@ $<
+$(BUILD)/programs/hello_elf: $(BUILD)/programs/hello
 	cp $< $@
-$(BUILD)/kernel/hello_elf.o: $(BUILD)/kernel/hello.elf
-	$(LD2) -r -b binary -m elf_i386 -o $@ $<
+$(BUILD)/programs/exec_target_elf: $(BUILD)/programs/exec_target
+	cp $< $@
 
 $(BUILD)/boot/%.o: $(SRC)/boot/%.c
 	@mkdir -p $(@D)
@@ -44,15 +42,19 @@ $(BUILD)/kernel/%.o: $(SRC)/kernel/%.S
 	@mkdir -p $(@D)
 	$(CC) -m32 -c -o $@ $<
 
-iso: $(BUILD)/$(KERNEL)
+iso: $(BUILD)/$(KERNEL) $(BUILD)/programs/hello_elf $(BUILD)/programs/exec_target_elf
 	mkdir -p $(BUILD)/iso/boot/grub
 	cp $(BUILD)/$(KERNEL) $(BUILD)/iso/boot/
+	cp $(BUILD)/programs/hello_elf $(BUILD)/iso/boot/
+	cp $(BUILD)/programs/exec_target_elf $(BUILD)/iso/boot/
 	echo 'set timeout=10'                      > $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'set default=0'                     >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'insmod vbe'                        >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'insmod vga'                        >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'menuentry "neodymium" {'           >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo '  multiboot2 /boot/neodymium.bin'   >> $(BUILD)/iso/boot/grub/grub.cfg
+	echo '  module2 /boot/hello_elf'          >> $(BUILD)/iso/boot/grub/grub.cfg
+	echo '  module2 /boot/exec_target_elf'    >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo '}'                                 >> $(BUILD)/iso/boot/grub/grub.cfg
 	grub-mkrescue -o $(BUILD)/$(ISO) $(BUILD)/iso
 

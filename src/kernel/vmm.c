@@ -58,7 +58,7 @@ void vmm_map_page(void *virt, void *phys, unsigned int flags) {
             pt[j] = 0;
         page_directory[pd_idx] = ((unsigned int)pt) | VMM_PRESENT | VMM_WRITABLE | (flags & VMM_USER);
     }
-
+    if (flags & VMM_USER) page_directory[pd_idx] |= VMM_USER;
     unsigned int *pt = (unsigned int *)(page_directory[pd_idx] & 0xFFFFF000);
     pt[pt_idx] = (p & 0xFFFFF000) | flags | VMM_PRESENT;
 }
@@ -79,6 +79,14 @@ void *vmm_alloc_page(void *virt, unsigned int flags) {
         return 0;
     vmm_map_page(virt, phys, flags);
     return phys;
+}
+
+void vmm_free_page(void *virt) {
+    void *phys = vmm_get_phys(virt);
+    if (phys) {
+        vmm_unmap_page(virt);
+        pmm_free_page(phys);
+    }
 }
 
 void *vmm_get_phys(void *virt) {

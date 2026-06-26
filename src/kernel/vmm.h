@@ -8,4 +8,5 @@ void vmm_map_page(void *virt, void *phys, unsigned int flags);
 void vmm_unmap_page(void *virt);
 void *vmm_alloc_page(void *virt, unsigned int flags);
 void *vmm_get_phys(void *virt);
+void vmm_free_page(void *virt);
 #endif

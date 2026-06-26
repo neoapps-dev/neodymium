@@ -1,32 +1,19 @@
 .section .text
 .globl _start
 _start:
-    mov $'H', %ebx
+    mov $'e', %ebx
+    mov $1, %eax
+    int $0x80
+    mov $'x', %ebx
     mov $1, %eax
     int $0x80
     mov $'e', %ebx
     mov $1, %eax
     int $0x80
-    mov $'l', %ebx
-    mov $1, %eax
-    int $0x80
-    mov $'l', %ebx
-    mov $1, %eax
-    int $0x80
-    mov $'o', %ebx
+    mov $'c', %ebx
     mov $1, %eax
     int $0x80
     mov $'!', %ebx
-    mov $1, %eax
-    int $0x80
-    mov $'\n', %ebx
-    mov $1, %eax
-    int $0x80
-
-    mov 0xE0001000, %ebx
-    mov $9, %eax
-    int $0x80
-    mov $'X', %ebx
     mov $1, %eax
     int $0x80
     mov $'\n', %ebx
