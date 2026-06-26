@@ -34,6 +34,8 @@ iso: $(BUILD)/$(KERNEL)
 	cp $(BUILD)/$(KERNEL) $(BUILD)/iso/boot/
 	echo 'set timeout=10'                      > $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'set default=0'                     >> $(BUILD)/iso/boot/grub/grub.cfg
+	echo 'insmod vbe'                        >> $(BUILD)/iso/boot/grub/grub.cfg
+	echo 'insmod vga'                        >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'menuentry "neodymium" {'           >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo '  multiboot /boot/neodymium.bin'   >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo '}'                                 >> $(BUILD)/iso/boot/grub/grub.cfg
