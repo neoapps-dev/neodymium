@@ -106,10 +106,10 @@ void kernel_main(void) {
                 fb_clear(fb_rgb(0, 0, 0));
                 if (fbcon_get_visible()) fbcon_redraw();
             } else if (c >= KEY_F1 && c <= KEY_F12) printf("[F%d]", c - KEY_F1 + 1);
-            else if (c == KEY_UP) vga_cursor_up();
-            else if (c == KEY_DOWN) vga_cursor_down();
-            else if (c == KEY_LEFT) vga_cursor_left();
-            else if (c == KEY_RIGHT) vga_cursor_right();
+            else if (c == KEY_UP) fbcon_cursor_up();
+            else if (c == KEY_DOWN) fbcon_cursor_down();
+            else if (c == KEY_LEFT) fbcon_cursor_left();
+            else if (c == KEY_RIGHT) fbcon_cursor_right();
             else if (c < 256)
                 printf("%c", c);
         }

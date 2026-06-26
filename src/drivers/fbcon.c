@@ -106,6 +106,28 @@ void fbcon_set_visible(int v) {
     }
 }
 int fbcon_get_visible(void) { return visible; }
+void fbcon_cursor_up(void) {
+    cursor_hide();
+    if (cy > 0) cy--;
+    cursor_show();
+}
+void fbcon_cursor_down(void) {
+    cursor_hide();
+    if (cy < ROWS - 1) cy++;
+    cursor_show();
+}
+void fbcon_cursor_left(void) {
+    cursor_hide();
+    if (cx > 0) cx--;
+    else if (cy > 0) { cy--; cx = COLS - 1; }
+    cursor_show();
+}
+void fbcon_cursor_right(void) {
+    cursor_hide();
+    if (cx < COLS - 1) cx++;
+    else if (cy < ROWS - 1) { cy++; cx = 0; }
+    cursor_show();
+}
 void fbcon_tick(void) {
     if (!visible) {
         cursor_hide();
