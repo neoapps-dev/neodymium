@@ -102,6 +102,7 @@ void sched_tick(struct regs *r) {
         struct task *idle = malloc(sizeof(struct task));
         if (!idle) return;
         idle->stack = r;
+        idle->stack_top = 0;
         idle->next = task_list->next;
         task_list->next = idle;
         current_task = idle;
@@ -112,5 +113,23 @@ void sched_tick(struct regs *r) {
     current_task = current_task->next;
     tss_set_esp0(current_task->stack_top);
     outb(0x20, 0x20);
+    restore_context(current_task->stack);
+}
+
+void task_exit(void) {
+    if (!task_list || !current_task) for (;;) hlt();
+    struct task *t = task_list;
+    while (t->next != current_task) t = t->next;
+    struct task *dead = current_task;
+    t->next = dead->next;
+    if (dead == t && dead->next == dead) {
+        task_list = 0;
+        current_task = 0;
+        for (;;) hlt();
+    }
+    current_task = t->next;
+    tss_set_esp0(current_task->stack_top);
+    if (dead->stack_top) free((void *)(dead->stack_top - STACK_SIZE));
+    free(dead);
     restore_context(current_task->stack);
 }

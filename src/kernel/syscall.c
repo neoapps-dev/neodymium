@@ -1,11 +1,11 @@
 #include "syscall.h"
 #include "printf.h"
-#include "asm/cpu.h"
+#include "sched.h"
 extern unsigned int get_tick(void);
 static void handle_exit(struct regs *r) {
     (void)r;
     printf("[sys] exit\n");
-    for (;;) hlt();
+    task_exit();
 }
 static void handle_write(struct regs *r) {
     if (r->ebx < 256)
