@@ -1,17 +1,24 @@
 #include "kernel.h"
 #include "idt.h"
+#include "pmm.h"
 #include "../drivers/ps2.h"
 #include "asm/cpu.h"
+extern struct multiboot_info *mboot_info;
 void kernel_main(void) {
     vga_init();
     serial_init();
     idt_init();
+    pmm_init(mboot_info);
     ps2_init();
-    vga_setcolor(vga_entry_color(VGA_RED, VGA_BLACK));
-    printf("neodymium\n");
-    printf("type something:\n");
     vga_setcolor(vga_entry_color(VGA_WHITE, VGA_BLACK));
+    printf("//neodymium [%s]\n\n", MAKE_COMMIT_HASH);
+    unsigned int free_pages = pmm_get_free_page_count();
+    printf("[pmm] %u KiB free\n", free_pages * 4);
+    void *page = pmm_alloc_page();
+    if (page) printf("[pmm] allocated page at 0x%x\n", (unsigned int)page);
+    pmm_free_page(page);
     sti();
+    printf("[ps/2] type something:\n\n\n");
     while (1) {
         int c = ps2_getchar();
         if (c == '\b')

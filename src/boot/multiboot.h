@@ -37,4 +37,12 @@ struct multiboot_info {
     uint32_t mmap_addr;
 };
 
+struct multiboot_mmap_entry {
+    unsigned int size;
+    unsigned int addr_low;
+    unsigned int addr_high;
+    unsigned int len_low;
+    unsigned int len_high;
+    unsigned int type;
+} __attribute__((packed));
 #endif

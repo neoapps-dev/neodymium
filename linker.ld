@@ -2,6 +2,7 @@ ENTRY(_start)
 SECTIONS
 {
     . = 1M;
+    _kernel_start = .;
     .multiboot : {
         *(.multiboot)
     }
@@ -27,6 +28,7 @@ SECTIONS
         _stack_top = .;
     }
 
+    _kernel_end = .;
     /DISCARD/ : {
         *(.note.gnu.property)
         *(.eh_frame)
