@@ -3,9 +3,13 @@
 #include "pmm.h"
 #include "vmm.h"
 #include "heap.h"
+#include "sched.h"
 #include "../drivers/ps2.h"
 #include "asm/cpu.h"
 extern struct multiboot_info *mboot_info;
+//static void task_a(void) { while (1) printf("A"); }
+//static void task_b(void) { while (1) printf("B"); }
+//static void task_c(void) { while (1) printf("C"); }
 void kernel_main(void) {
     vga_init();
     serial_init();
@@ -49,6 +53,12 @@ void kernel_main(void) {
     }
     free(b);
     free(c);
+    //sched_init();
+    //task_create(task_a);
+    //task_create(task_b);
+    //task_create(task_c);
+    //irq_install_handler(0, sched_tick);
+    //printf("[sched] 3 tasks running (A, B, C)\n\n");
     sti();
     printf("[ps/2] type something:\n\n\n");
     while (1) {
