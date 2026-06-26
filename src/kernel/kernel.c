@@ -2,6 +2,7 @@
 #include "idt.h"
 #include "pmm.h"
 #include "vmm.h"
+#include "heap.h"
 #include "../drivers/ps2.h"
 #include "asm/cpu.h"
 extern struct multiboot_info *mboot_info;
@@ -28,6 +29,26 @@ void kernel_main(void) {
         pmm_free_page(vpage);
     }
 
+    heap_init();
+    unsigned int *a = malloc(8 * sizeof(unsigned int));
+    unsigned int *b = malloc(8 * sizeof(unsigned int));
+    if (a && b) {
+        printf("[heap] a=0x%x b=0x%x diff=%d\n", (unsigned int)a, (unsigned int)b,
+               (unsigned int)b - (unsigned int)a);
+        a[0] = 0xAAAA;
+        b[0] = 0xBBBB;
+        printf("[heap] *a=0x%x *b=0x%x\n", a[0], b[0]);
+    }
+    free(a);
+    unsigned int *c = malloc(8 * sizeof(unsigned int));
+    if (c) {
+        printf("[heap] c=0x%x (reused a? %s)\n", (unsigned int)c,
+               (unsigned int)c == (unsigned int)a ? "yes" : "no");
+        c[0] = 0xCCCC;
+        printf("[heap] *c=0x%x\n", c[0]);
+    }
+    free(b);
+    free(c);
     sti();
     printf("[ps/2] type something:\n\n\n");
     while (1) {
