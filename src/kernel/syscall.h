@@ -1,5 +1,6 @@
 #ifndef SYSCALL_H
 #define SYSCALL_H
+//neo: syscall convention is eax=sysno, ebx=arg1, ecx=arg2, edx=arg3, esi=arg4, edi=arg5
 #define SYS_EXIT 0
 #define SYS_WRITE 1
 #define SYS_WRITESTR 2
@@ -20,7 +21,7 @@ static inline void sys_write(char c) {
     __asm__ volatile("int $0x80" : : "a"(SYS_WRITE), "b"((unsigned int)c) : "memory");
 }
 static inline void sys_writestr(const char *s) {
-    __asm__ volatile("int $0x80" : : "a"(SYS_WRITESTR), "c"(s) : "memory");
+    __asm__ volatile("int $0x80" : : "a"(SYS_WRITESTR), "b"(s) : "memory");
 }
 static inline unsigned int sys_gettick(void) {
     unsigned int ret;

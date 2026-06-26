@@ -11,7 +11,7 @@ static void handle_write(struct regs *r) {
     if (r->ebx < 256)printf("%c", (char)r->ebx);
 }
 static void handle_writestr(struct regs *r) {
-    if (r->ecx) printf("%s", (const char *)r->ecx);
+    if (r->ebx) printf("%s", (const char *)r->ebx);
 }
 static void handle_gettick(struct regs *r) {
     r->eax = get_tick();
