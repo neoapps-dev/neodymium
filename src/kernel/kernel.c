@@ -4,9 +4,11 @@
 #include "vmm.h"
 #include "heap.h"
 #include "sched.h"
+#include "../boot/multiboot.h"
 #include "../drivers/ps2.h"
-#include "asm/cpu.h"
 extern struct multiboot_info *mboot_info;
+#include "../drivers/framebuffer.h"
+#include "asm/cpu.h"
 //static void task_a(void) { while (1) printf("A"); }
 //static void task_b(void) { while (1) printf("B"); }
 //static void task_c(void) { while (1) printf("C"); }
@@ -53,6 +55,36 @@ void kernel_main(void) {
     }
     free(b);
     free(c);
+    if (fb_init(mboot_info) == 0) {
+        unsigned int bg = fb_rgb(0, 0, 0);
+        unsigned int w = fb_get_width();
+        unsigned int h = fb_get_height();
+        fb_clear(bg);
+        for (unsigned int x = 0; x < w; x++) for (unsigned int y = 0; y < 72; y++) if ((x ^ y) & 3) fb_putpixel(x, y, fb_rgb(10 + y / 5, 8 + y / 6, 18 + y / 3));
+        fb_drawstring(20, 8, "neodymium framebuffer yay", fb_rgb(255, 200, 70), bg);
+        fb_drawstring(20, 28, "x86", fb_rgb(130, 130, 170), bg);
+        fb_drawstring(20, 48, MAKE_COMMIT_HASH, fb_rgb(80, 200, 80), bg);
+        fb_drawstring(w - 180, 8, "1280x720", fb_rgb(150, 150, 200), bg);
+        fb_drawstring(w - 180, 28, "32bpp", fb_rgb(150, 150, 200), bg);
+        fb_fillrect(0, 74, w, 2, fb_rgb(40, 30, 60));
+        unsigned int swatches[] = {
+            fb_rgb(255, 80, 80),   fb_rgb(255, 180, 50),
+            fb_rgb(200, 200, 50),  fb_rgb(80, 200, 80),
+            fb_rgb(60, 140, 255),  fb_rgb(180, 80, 255),
+            fb_rgb(255, 80, 180),
+        };
+        for (int i = 0; i < 7; i++) fb_fillrect(20 + i * 175, 90, 100, 100, swatches[i]);
+        fb_drawstring(20, 210, "pmm  vmm  heap  sched  fb", fb_rgb(120, 120, 160), bg);
+        for (int i = 0; i < 5; i++) fb_drawchar(20 + i * 67, 230, "-\\|/-"[(i + h) & 3], fb_rgb(80, 200, 80), bg);
+        fb_drawstring(20, 270, "memory:", fb_rgb(150, 150, 180), bg);
+        fb_fillrect(90, 272, 600, 12, fb_rgb(20, 20, 30));
+        for (int i = 0; i < 54; i++) fb_fillrect(92 + i * 11, 274, 9, 8, fb_rgb(0, 220 - i * 4, 40 + i * 2));
+        fb_drawstring(20, 310, "i have no idea what im doing", fb_rgb(180, 160, 120), bg);
+        for (unsigned int x = 0; x < w; x++) for (unsigned int y = h - 26; y < h; y++) if ((x + y) & 1) fb_putpixel(x, y, fb_rgb(12, 12, 20));
+        fb_drawstring(20, h - 20, "ps/2 ok  serial ok  send help", fb_rgb(100, 100, 120), bg);
+        printf("[fb] initialised\n");
+    }
+
     //sched_init();
     //task_create(task_a);
     //task_create(task_b);

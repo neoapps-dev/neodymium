@@ -6,10 +6,18 @@ struct {
     unsigned int magic;
     unsigned int flags;
     unsigned int checksum;
+    unsigned int mode_type;
+    unsigned int width;
+    unsigned int height;
+    unsigned int depth;
 } multiboot_header __attribute__((used)) = {
     .magic    = 0x1BADB002,
-    .flags    = 0x00000003,
-    .checksum = -(0x1BADB002 + 0x00000003)
+    .flags    = 0x00000007,
+    .checksum = -(0x1BADB002 + 0x00000007),
+    .mode_type = 0,
+    .width     = 1280,
+    .height    = 720,
+    .depth     = 32
 };
 
 extern void kernel_main(void);

@@ -2,3 +2,4 @@
 #include "vga.h"
 #include "serial.h"
 #include "ps2.h"
+#include "framebuffer.h"
