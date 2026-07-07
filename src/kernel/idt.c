@@ -1,7 +1,8 @@
 #include "idt.h"
+#include "printf.h"
+#include "panic.h"
 #include "gdt.h"
 #include "syscall.h"
-#include "printf.h"
 #include "asm/cpu.h"
 #include "asm/io.h"
 static struct idt_entry idt[256];
@@ -51,8 +52,7 @@ void exception_install_handler(int num, void (*handler)(struct regs *)) {
 }
 
 static void default_exception_handler(struct regs *r) {
-    printf("EXCEPTION: %u at 0x%x, err=%u\n", r->int_no, r->eip, r->err_code);
-    for (;;) hlt();
+    panic_regs("exception %u", r, r->int_no);
 }
 
 void isr_handler(struct regs *r) {

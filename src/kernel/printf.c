@@ -7,9 +7,7 @@ static void putchar(char c) {
     fbcon_putchar(c);
 }
 
-void printf(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
+void vprintf(const char *fmt, va_list args) {
     for (const char *p = fmt; *p; p++) {
         if (*p == '%') {
             p++;
@@ -58,5 +56,11 @@ void printf(const char *fmt, ...) {
             putchar(*p);
         }
     }
+}
+
+void printf(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
     va_end(args);
 }

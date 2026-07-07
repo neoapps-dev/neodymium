@@ -3,14 +3,14 @@
 #include "printf.h"
 #include "idt.h"
 #include "asm/cpu.h"
+#include "panic.h"
 static unsigned int *current_page_directory;
 static unsigned int *kernel_page_directory;
 static unsigned int kernel_pd_count;
 static void page_fault_handler(struct regs *r) {
     unsigned int fault_addr;
     __asm__ volatile("mov %%cr2, %0" : "=r"(fault_addr));
-    printf("[neodymium] PAGE FAULT at 0x%x, eip=0x%x, err=%u\n", fault_addr, r->eip, r->err_code);
-    for (;;) hlt();
+    panic_regs("page fault at 0x%x", r, fault_addr);
 }
 
 static void vmm_enable(void) {
@@ -27,19 +27,13 @@ static void vmm_enable(void) {
 void vmm_init(void) {
     unsigned int total_p = pmm_get_total_page_count();
     kernel_page_directory = pmm_alloc_page();
-    if (!kernel_page_directory) {
-        printf("[vmm] failed to allocate PD\n");
-        for (;;) hlt();
-    }
+    if (!kernel_page_directory) panic("vmm: failed to allocate PD");
     current_page_directory = kernel_page_directory;
     for (int i = 0; i < 1024; i++) kernel_page_directory[i] = 0;
     for (unsigned int i = 0; i < total_p; i += 1024) {
         unsigned int pd_idx = i / 1024;
         unsigned int *pt = pmm_alloc_page();
-        if (!pt) {
-            printf("[vmm] failed to allocate PT for idx %u\n", pd_idx);
-            for (;;) hlt();
-        }
+        if (!pt) panic("vmm: failed to allocate PT for idx %u", pd_idx);
         for (unsigned int j = 0; j < 1024 && (i + j) < total_p; j++) pt[j] = ((i + j) * PAGE_SIZE) | VMM_PRESENT | VMM_WRITABLE | VMM_USER;
         kernel_page_directory[pd_idx] = ((unsigned int)pt) | VMM_PRESENT | VMM_WRITABLE | VMM_USER;
     }

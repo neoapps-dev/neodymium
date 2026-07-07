@@ -6,6 +6,7 @@
 #include "sched.h"
 #include "syscall.h"
 #include "elf.h"
+#include "panic.h"
 #include "../boot/multiboot.h"
 #include "../drivers/ps2.h"
 extern struct multiboot_info *mboot_info;
@@ -134,6 +135,8 @@ void kernel_main(void) {
         if (c >= 0) {
             if (c == '\b')
                 printf("\b \b");
+            else if (c == KEY_F12 && ps2_is_ctrl() && ps2_is_shift() && ps2_is_alt())
+                panic("user requested");
             else if (c == KEY_F12 && ps2_is_ctrl() && ps2_is_shift() && fb_ok) {
                 if (fbcon_get_visible()) fbcon_set_visible(0); else fbcon_set_visible(1);
                 fb_clear(fb_rgb(0, 0, 0));

@@ -5,6 +5,7 @@
 #include "vmm.h"
 #include "elf.h"
 #include "printf.h"
+#include "panic.h"
 #include "asm/cpu.h"
 #include "asm/io.h"
 #include "../drivers/ps2.h"
@@ -219,6 +220,8 @@ static void yield(struct regs *r) {
         if (c >= 0) {
             if (c == '\b')
                 printf("\b \b");
+            else if (c == KEY_F12 && ps2_is_ctrl() && ps2_is_shift() && ps2_is_alt())
+                panic("user requested");
             else if (c == KEY_F12 && ps2_is_ctrl() && ps2_is_shift() && fb_is_enabled()) {
                 if (fbcon_get_visible()) fbcon_set_visible(0);
                 else {
@@ -246,7 +249,7 @@ static void yield(struct regs *r) {
 
 void sched_exit_with(struct regs *r, int code) {
     if (!task_list || !current_task)
-        for (;;) hlt();
+        panic_regs("sched: exit with no task", r);
     current_task->exit_code = code;
     current_task->state = TASK_ZOMBIE;
     yield(r);

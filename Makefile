@@ -1,5 +1,5 @@
 CC      = gcc
-CFLAGS  = -std=c99 -m32 -ffreestanding -O2 -Wall -Wextra -Werror -nostdlib -fno-pie -fno-stack-protector -mno-sse -mno-sse2 -mno-mmx -mno-80387 -DMAKE_COMMIT_HASH=\"$(shell git describe --always --dirty)\"
+CFLAGS  = -std=c99 -m32 -ffreestanding -O2 -Wall -Wextra -Werror -nostdlib -fno-pie -fno-stack-protector -mno-sse -mno-sse2 -mno-mmx -mno-80387 -fno-omit-frame-pointer -DMAKE_COMMIT_HASH=\"$(shell git describe --always --dirty)\"
 LD      = gcc
 LDFLAGS = -m32 -ffreestanding -O2 -nostdlib -nostartfiles -static -fno-pie -fno-stack-protector -lgcc -Wl,-e,_start
 AS      = gcc

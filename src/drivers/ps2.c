@@ -11,6 +11,7 @@ static volatile unsigned int keybuf_tail;
 static int extended;
 static int shift_pressed;
 static int ctrl_pressed;
+static int alt_pressed;
 static int caps_pressed;
 static const char keymap_lower[128] = {
     0,    27,   '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
@@ -77,6 +78,8 @@ static void keyboard_handler(struct regs *r) {
         case 0xAA: case 0xB6: shift_pressed = 0; return;
         case 0x1D: ctrl_pressed = 1; return;
         case 0x9D: ctrl_pressed = 0; return;
+        case 0x38: alt_pressed = 1; return;
+        case 0xB8: alt_pressed = 0; return;
         case 0x3A: caps_pressed = !caps_pressed; return;
         case 0xBA: return;
     }
@@ -127,3 +130,4 @@ int ps2_poll(void) {
 
 int ps2_is_ctrl(void) { return ctrl_pressed; }
 int ps2_is_shift(void) { return shift_pressed; }
+int ps2_is_alt(void) { return alt_pressed; }
