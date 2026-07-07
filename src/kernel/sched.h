@@ -3,7 +3,7 @@
 #include "idt.h"
 void sched_init(void);
 int task_create(void (*entry)(void));
-int task_create_elf(unsigned int entry, unsigned int user_esp);
+int task_create_elf(unsigned int entry, unsigned int user_esp, unsigned int *pd);
 void sched_tick(struct regs *r);
 int task_create_fork(struct regs *r);
 void sched_exit_with(struct regs *r, int code);

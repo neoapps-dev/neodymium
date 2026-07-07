@@ -96,15 +96,27 @@ void kernel_main(void) {
     unsigned int elf_entry, elf_stack;
     unsigned int elf_len = module_end - module_start;
     printf("[elf] loading %u bytes from module\n", elf_len);
-    if (module_start && elf_len && elf_load((void *)module_start, &elf_entry, &elf_stack) == 0) {
-        printf("[elf] entry=0x%x stack=0x%x\n", elf_entry, elf_stack);
-        task_create_elf(elf_entry, elf_stack);
-        printf("[sched] ELF task running\n\n");
-        if (module2_count > 1) {
-            void *modptr = vmm_alloc_page((void *)0xE0001000, VMM_USER);
-            if (modptr) {
-                *(unsigned int *)0xE0001000 = module2_start;
-                printf("[elf] module2 at 0x%x -> 0xE0001000\n", module2_start);
+    if (module_start && elf_len) {
+        unsigned int *pd = vmm_create_address_space();
+        if (pd) {
+            vmm_switch_address_space(pd);
+            int ret = elf_load((void *)module_start, &elf_entry, &elf_stack);
+            vmm_switch_address_space(vmm_get_kernel_page_directory());
+            if (ret == 0) {
+                printf("[elf] entry=0x%x stack=0x%x\n", elf_entry, elf_stack);
+                task_create_elf(elf_entry, elf_stack, pd);
+                printf("[sched] ELF task running\n\n");
+                if (module2_count > 1) {
+                    vmm_switch_address_space(pd);
+                    void *modptr = vmm_alloc_page((void *)0xE0001000, VMM_USER);
+                    if (modptr) {
+                        *(unsigned int *)0xE0001000 = module2_start;
+                        printf("[elf] module2 at 0x%x -> 0xE0001000\n", module2_start);
+                    }
+                    vmm_switch_address_space(vmm_get_kernel_page_directory());
+                }
+            } else {
+                vmm_destroy_address_space(pd);
             }
         }
     } else {

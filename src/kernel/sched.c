@@ -28,6 +28,7 @@ struct task {
     int exit_code;
     int state;
     unsigned int wakeup_tick;
+    unsigned int *page_dir;
 };
 
 static struct task *task_list;
@@ -68,14 +69,17 @@ int task_create(void (*entry)(void)) {
         return -1;
     }
 
+    unsigned int *pd = vmm_create_address_space();
+    if (!pd) { free(stack); free(t); return -1; }
+    vmm_switch_address_space(pd);
     unsigned char *user_stack = vmm_alloc_page((void *)0xB0000000, VMM_USER | VMM_WRITABLE);
     if (!user_stack) {
-        free(stack);
-        free(t);
-        return -1;
+        vmm_switch_address_space(vmm_get_kernel_page_directory());
+        vmm_destroy_address_space(pd);
+        free(stack); free(t); return -1;
     }
-    for (unsigned int i = 0; i < PAGE_SIZE / 4; i++) ((unsigned int *)0xB0000000)[i] = 0;
-
+    for (unsigned int i = 0; i < 0x1000 / 4; i++) ((unsigned int *)0xB0000000)[i] = 0;
+    vmm_switch_address_space(vmm_get_kernel_page_directory());
     struct regs *r = (struct regs *)(stack + STACK_SIZE - sizeof(struct regs));
     for (unsigned int i = 0; i < sizeof(struct regs) / 4; i++) ((unsigned int *)r)[i] = 0;
     r->gs = GDT_USER_DATA_SEG | 3;
@@ -94,6 +98,7 @@ int task_create(void (*entry)(void)) {
     t->state = TASK_RUNNING;
     t->exit_code = 0;
     t->wakeup_tick = 0;
+    t->page_dir = pd;
     if (!task_list) {
         task_list = t;
         t->next = t;
@@ -104,7 +109,7 @@ int task_create(void (*entry)(void)) {
     return 0;
 }
 
-int task_create_elf(unsigned int entry, unsigned int user_esp) {
+int task_create_elf(unsigned int entry, unsigned int user_esp, unsigned int *pd) {
     struct task *t = malloc(sizeof(struct task));
     if (!t) return -1;
     unsigned char *stack = malloc(STACK_SIZE);
@@ -131,6 +136,7 @@ int task_create_elf(unsigned int entry, unsigned int user_esp) {
     t->state = TASK_RUNNING;
     t->exit_code = 0;
     t->wakeup_tick = 0;
+    t->page_dir = pd;
     if (!task_list) {
         task_list = t;
         t->next = t;
@@ -149,6 +155,13 @@ int task_create_fork(struct regs *r) {
         free(t);
         return -1;
     }
+
+    unsigned int *pd = 0;
+    if (current_task && current_task->page_dir) {
+        pd = vmm_clone_address_space(current_task->page_dir);
+        if (!pd) { free(stack); free(t); return -1; }
+    }
+
     struct regs *cr = (struct regs *)(stack + STACK_SIZE - sizeof(struct regs));
     *cr = *r;
     cr->eax = 0;
@@ -159,6 +172,7 @@ int task_create_fork(struct regs *r) {
     t->state = TASK_RUNNING;
     t->exit_code = 0;
     t->wakeup_tick = 0;
+    t->page_dir = pd;
     if (!task_list) {
         task_list = t;
         t->next = t;
@@ -184,6 +198,7 @@ void sched_tick(struct regs *r) {
         outb(0x20, 0x20);
         current_task = next;
         tss_set_esp0(current_task->stack_top);
+        if (current_task->page_dir) vmm_switch_address_space(current_task->page_dir);
         restore_context(current_task->stack);
     }
 }
@@ -197,6 +212,7 @@ static void yield(struct regs *r) {
         if (next) {
             current_task = next;
             tss_set_esp0(current_task->stack_top);
+            if (current_task->page_dir) vmm_switch_address_space(current_task->page_dir);
             restore_context(current_task->stack);
         }
         int c = ps2_poll();
@@ -257,6 +273,8 @@ int sched_wait(void) {
                 task_list = t->next;
             if (task_list == t)
                 task_list = 0;
+            if (t->page_dir)
+                vmm_destroy_address_space(t->page_dir);
             if (t->stack_top)
                 free((void *)(t->stack_top - STACK_SIZE));
             free(t);
@@ -275,11 +293,20 @@ int sched_getpid(void) {
 int sched_exec(struct regs *r, void *elf) {
     if (!current_task) return -1;
     Elf32_Ehdr *ehdr = (Elf32_Ehdr *)elf;
-    if (*(unsigned int *)ehdr->e_ident != ELF_MAGIC)
-        return -1;
+    if (*(unsigned int *)ehdr->e_ident != ELF_MAGIC)return -1;
+    unsigned int *new_pd = vmm_create_address_space();
+    if (!new_pd) return -1;
+    unsigned int *old_pd = current_task->page_dir;
+    vmm_switch_address_space(new_pd);
     unsigned int entry, stack_top;
-    if (elf_load(elf, &entry, &stack_top) != 0)
+    if (elf_load(elf, &entry, &stack_top) != 0) {
+        vmm_switch_address_space(vmm_get_kernel_page_directory());
+        vmm_destroy_address_space(new_pd);
         return -1;
+    }
+
+    if (old_pd) vmm_destroy_address_space(old_pd);
+    current_task->page_dir = new_pd;
     r->eip = entry;
     r->user_esp = stack_top;
     r->eax = 0;
