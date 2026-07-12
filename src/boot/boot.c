@@ -37,8 +37,6 @@ struct {
 
 unsigned int module_start;
 unsigned int module_end;
-unsigned int module2_start;
-unsigned int module2_count;
 extern void kernel_main(void);
 extern char _stack_top[];
 __attribute__((noreturn))
@@ -65,16 +63,11 @@ void _start(void) {
             boot_info.mmap_addr = (uint32_t)(mt + 1);
             boot_info.mmap_length = tag->size - sizeof(struct mb2_tag_mmap);
             boot_info.mmap_entry_size = mt->entry_size;
-        } else if (tag->type == 3) {
+        } else if (tag->type == 3 && mod_count == 0) {
             uint32_t *p = (uint32_t *)((unsigned int)tag + 8);
-            if (mod_count == 0) {
-                module_start = p[0];
-                module_end = p[1];
-            } else if (mod_count == 1) {
-                module2_start = p[0];
-            }
+            module_start = p[0];
+            module_end = p[1];
             mod_count++;
-            module2_count = mod_count;
         } else if (tag->type == 8) {
             struct mb2_tag_fb *ft = (void *)tag;
             boot_info.flags |= (1 << 12);
@@ -84,6 +77,8 @@ void _start(void) {
             boot_info.framebuffer_height = ft->fb_height;
             boot_info.framebuffer_bpp = ft->fb_bpp;
             boot_info.framebuffer_type = ft->fb_type;
+        } else if (tag->type == 17 || tag->type == 18) {
+            boot_info.flags |= MBOOT_FLAG_EFI;
         }
         pos += (tag->size + 7) & ~7;
     }

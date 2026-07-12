@@ -85,4 +85,5 @@ struct multiboot_mmap_entry {
     uint32_t type;
     uint32_t reserved;
 } __attribute__((packed));
+#define MBOOT_FLAG_EFI (1 << 24)
 #endif

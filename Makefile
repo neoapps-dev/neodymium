@@ -11,7 +11,7 @@ SRCS_C := $(shell find src -path src/programs -prune -o -name '*.c' -print)
 SRCS_S := $(shell find src -path src/programs -prune -o -name '*.S' -print)
 OBJS   := $(patsubst src/%.c,$(BUILD)/%.o,$(SRCS_C)) $(patsubst src/%.S,$(BUILD)/%.o,$(SRCS_S))
 all: $(BUILD)/$(KERNEL)
-.PHONY: all clean iso run
+.PHONY: all clean iso run run-uefi
 $(BUILD)/$(KERNEL): $(OBJS) linker.ld
 	$(LD) $(LDFLAGS) -T linker.ld -o $@ $(OBJS)
 
@@ -42,6 +42,8 @@ $(BUILD)/kernel/%.o: $(SRC)/kernel/%.S
 	@mkdir -p $(@D)
 	$(CC) -m32 -c -o $@ $<
 
+$(BUILD)/kernel/modules.o: $(BUILD)/programs/hello_elf $(BUILD)/programs/exec_target_elf
+
 iso: $(BUILD)/$(KERNEL) $(BUILD)/programs/hello_elf $(BUILD)/programs/exec_target_elf
 	mkdir -p $(BUILD)/iso/boot/grub
 	cp $(BUILD)/$(KERNEL) $(BUILD)/iso/boot/
@@ -51,6 +53,8 @@ iso: $(BUILD)/$(KERNEL) $(BUILD)/programs/hello_elf $(BUILD)/programs/exec_targe
 	echo 'set default=0'                     >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'insmod vbe'                        >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'insmod vga'                        >> $(BUILD)/iso/boot/grub/grub.cfg
+	echo 'insmod efi_gop'                    >> $(BUILD)/iso/boot/grub/grub.cfg
+	echo 'insmod efi_uga'                    >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo 'menuentry "neodymium" {'           >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo '  multiboot2 /boot/neodymium.bin'   >> $(BUILD)/iso/boot/grub/grub.cfg
 	echo '  module2 /boot/hello_elf'          >> $(BUILD)/iso/boot/grub/grub.cfg
@@ -63,6 +67,9 @@ run: $(BUILD)/$(KERNEL)
 
 run-iso: iso
 	qemu-system-x86_64 -vga std -cdrom $(BUILD)/$(ISO) -serial stdio
+
+run-uefi: iso
+	qemu-system-x86_64 -bios /usr/share/edk2-ovmf/OVMF_CODE.fd -cdrom $(BUILD)/$(ISO) -serial stdio -m 256M -vga std
 
 clean:
 	rm -rf $(BUILD)

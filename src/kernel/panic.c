@@ -132,7 +132,6 @@ void panic(const char *fmt, ...) {
     char msg[256];
     fmt_msg(msg, fmt, args);
     va_end(args);
-
     struct regs r;
     __asm__ volatile(
         "mov %%eax, %0\n"
@@ -150,18 +149,15 @@ void panic(const char *fmt, ...) {
     r.cs = 0x8;
     r.eflags = 0;
     r.err_code = 0;
-
     unsigned int frames[16]; int nframes;
     walk_frames(frames, &nframes, r.ebp);
-
-    draw_red_screen(msg, &r, frames, nframes);
+    draw_evil_af_scary_screen(msg, &r, frames, nframes);
     printf("\n[neodymium]\nKERNEL PANIC\n%s\n", msg);
     printf("eax=0x%x ebx=0x%x ecx=0x%x edx=0x%x\n", r.eax, r.ebx, r.ecx, r.edx);
     printf("esi=0x%x edi=0x%x ebp=0x%x esp=0x%x\n", r.esi, r.edi, r.ebp, r.esp);
     printf("eip=0x%x cs=0x%x eflags=0x%x err=%u\n", r.eip, r.cs, r.eflags, r.err_code);
     printf("backtrace:\n");
-    for (int i = 0; i < nframes; i++)
-        printf("  [0x%x]\n", frames[i]);
+    for (int i = 0; i < nframes; i++) printf("  [0x%x]\n", frames[i]);
     for (;;) hlt();
 }
 
@@ -180,7 +176,6 @@ void panic_regs(const char *fmt, struct regs *r, ...) {
     printf("esi=0x%x edi=0x%x ebp=0x%x esp=0x%x\n", r->esi, r->edi, r->ebp, r->esp);
     printf("eip=0x%x cs=0x%x eflags=0x%x err=%u\n", r->eip, r->cs, r->eflags, r->err_code);
     printf("backtrace:\n");
-    for (int i = 0; i < nframes; i++)
-        printf("  [0x%x]\n", frames[i]);
+    for (int i = 0; i < nframes; i++) printf("  [0x%x]\n", frames[i]);
     for (;;) hlt();
 }

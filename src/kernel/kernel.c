@@ -15,8 +15,8 @@ extern struct multiboot_info *mboot_info;
 #include "cmos.h"
 extern unsigned int module_start;
 extern unsigned int module_end;
-extern unsigned int module2_start;
-extern unsigned int module2_count;
+extern char _embedded_hello_start[], _embedded_hello_end[];
+extern char _embedded_exec_target_start[], _embedded_exec_target_end[];
 void kernel_main(void) {
     vga_init();
     serial_init();
@@ -26,6 +26,7 @@ void kernel_main(void) {
     fbcon_init();
     vga_setcolor(vga_entry_color(VGA_WHITE, VGA_BLACK));
     printf("//neodymium [%s]\n\n", MAKE_COMMIT_HASH);
+    printf("[boot] %s\n", (mboot_info->flags & MBOOT_FLAG_EFI) ? "uefi" : "bios");
     unsigned int free_pages = pmm_get_free_page_count();
     printf("[pmm] %u KiB free\n", free_pages * 4);
     void *page = pmm_alloc_page();
@@ -95,27 +96,31 @@ void kernel_main(void) {
 
     sched_init();
     unsigned int elf_entry, elf_stack;
-    unsigned int elf_len = module_end - module_start;
-    printf("[elf] loading %u bytes from module\n", elf_len);
-    if (module_start && elf_len) {
+    void *mod_ptr = (void *)0;
+    unsigned int mod_len = 0;
+    if (&_embedded_hello_start[0] != &_embedded_hello_end[0]) {
+        mod_ptr = (void *)&_embedded_hello_start[0];
+        mod_len = &_embedded_hello_end[0] - &_embedded_hello_start[0];
+        printf("[elf] embedded: start=0x%x len=%u\n", (unsigned int)mod_ptr, mod_len);
+    } else if (module_start && module_end > module_start) {
+        mod_ptr = (void *)module_start;
+        mod_len = module_end - module_start;
+        printf("[elf] grub: start=0x%x len=%u\n", (unsigned int)mod_ptr, mod_len);
+    }
+    if (mod_ptr && mod_len) {
         unsigned int *pd = vmm_create_address_space();
         if (pd) {
             vmm_switch_address_space(pd);
-            int ret = elf_load((void *)module_start, &elf_entry, &elf_stack);
+            int ret = elf_load(mod_ptr, &elf_entry, &elf_stack);
+            if (ret == 0 && &_embedded_exec_target_start[0] != &_embedded_exec_target_end[0]) {
+                void *mod_page = vmm_alloc_page((void *)0xE0001000, VMM_USER | VMM_WRITABLE);
+                if (mod_page) *(unsigned int *)0xE0001000 = (unsigned int)&_embedded_exec_target_start[0];
+            }
             vmm_switch_address_space(vmm_get_kernel_page_directory());
             if (ret == 0) {
                 printf("[elf] entry=0x%x stack=0x%x\n", elf_entry, elf_stack);
                 task_create_elf(elf_entry, elf_stack, pd);
                 printf("[sched] ELF task running\n\n");
-                if (module2_count > 1) {
-                    vmm_switch_address_space(pd);
-                    void *modptr = vmm_alloc_page((void *)0xE0001000, VMM_USER);
-                    if (modptr) {
-                        *(unsigned int *)0xE0001000 = module2_start;
-                        printf("[elf] module2 at 0x%x -> 0xE0001000\n", module2_start);
-                    }
-                    vmm_switch_address_space(vmm_get_kernel_page_directory());
-                }
             } else {
                 vmm_destroy_address_space(pd);
             }

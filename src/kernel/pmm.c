@@ -1,4 +1,5 @@
 #include "pmm.h"
+#include "printf.h"
 #include "../boot/multiboot.h"
 #define PMM_BITMAP_SIZE (PMM_MAX_PAGES / 32)
 static unsigned int pmm_bitmap[PMM_BITMAP_SIZE];
@@ -7,10 +8,19 @@ static unsigned int total_pages;
 extern unsigned int _kernel_start;
 extern unsigned int _kernel_end;
 void pmm_init(struct multiboot_info *mbd) {
-    unsigned int mem_size = 0;
-    if (mbd->flags & (1 << 0))
-        mem_size = mbd->mem_upper + 1024;
-    unsigned int total_mem = mem_size * 1024;
+    printf("[pmm] boot: %s\n", (mbd->flags & MBOOT_FLAG_EFI) ? "efi" : "bios");
+    unsigned int total_mem = 0;
+    if (mbd->flags & (1 << 6)) {
+        struct multiboot_mmap_entry *mmap = (struct multiboot_mmap_entry *)mbd->mmap_addr;
+        unsigned int mmap_end = mbd->mmap_addr + mbd->mmap_length;
+        while ((unsigned int)mmap < mmap_end) {
+            unsigned int end = mmap->addr_low + mmap->len_low;
+            if (end > total_mem) total_mem = end;
+            mmap = (struct multiboot_mmap_entry *)((unsigned int)mmap + mbd->mmap_entry_size);
+        }
+    }
+    if (total_mem == 0 && (mbd->flags & (1 << 0)))
+        total_mem = (mbd->mem_upper + 1024) * 1024;
     total_pages = total_mem / PAGE_SIZE;
     if (total_pages > PMM_MAX_PAGES)
         total_pages = PMM_MAX_PAGES;
